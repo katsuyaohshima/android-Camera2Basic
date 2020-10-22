@@ -67,7 +67,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
@@ -237,7 +236,7 @@ public class Camera2BasicFragment extends Fragment
      * This is the output file for our picture.
      */
     private File mFile;
-    private File fFile;
+    private File mFlagFile;
 
     /**
      * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
@@ -298,10 +297,10 @@ public class Camera2BasicFragment extends Fragment
                     //captFlgが立っている場合は撮影処理を行う。
                     if (captFlg == true){
 
-                        boolean isExists = fFile.exists();
+                        boolean isExists = mFlagFile.exists();
                         //フラグファイルがある場合は撮影処理を行いフラグファイルを削除
                         if(isExists == true) {
-                            fFile.delete();
+                            mFlagFile.delete();
                             captureStillPicture();
 
                         }
@@ -452,9 +451,9 @@ public class Camera2BasicFragment extends Fragment
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        //�o�͉摜�ƎB�e�t���O�̕ۑ��ꏊ�������ɒ�`����B
-        mFile = new File("/storage/self/primary/DCIM/Camera/", "out.jpg");
-        fFile = new File("/storage/self/primary/DCIM/Camera/", "flg.txt");
+        //ここに出力画像とフラグファイルのパスを記載する。
+        mFile = new File("/storage/self/primary/DCIM/Camera/", "img.jpg");
+        mFlagFile = new File("/storage/self/primary/DCIM/Camera/", "flg.txt");
         //mFile = new File(getActivity().getExternalFilesDir(null), "pic.jpg");
         
     }
