@@ -68,6 +68,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -181,6 +182,8 @@ public class Camera2BasicFragment extends Fragment
      */
     private Size mPreviewSize;
 
+    private boolean captFlg = false;
+
     /**
      * {@link CameraDevice.StateCallback} is called when {@link CameraDevice} changes its state.
      */
@@ -233,6 +236,7 @@ public class Camera2BasicFragment extends Fragment
      * This is the output file for our picture.
      */
     private File mFile;
+    private File mFlagFile;
 
     /**
      * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
@@ -289,6 +293,19 @@ public class Camera2BasicFragment extends Fragment
         private void process(CaptureResult result) {
             switch (mState) {
                 case STATE_PREVIEW: {
+
+                    //captFlgが立っている場合は撮影処理を行う。
+                    if (captFlg == true){
+
+                        boolean isExists = mFlagFile.exists();
+                        //フラグファイルがある場合は撮影処理を行いフラグファイルを削除
+                        if(isExists == true) {
+                            mFlagFile.delete();
+                            captureStillPicture();
+
+                        }
+
+                    }
                     // We have nothing to do when the camera preview is working normally.
                     break;
                 }
@@ -434,7 +451,11 @@ public class Camera2BasicFragment extends Fragment
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        mFile = new File(getActivity().getExternalFilesDir(null), "pic.jpg");
+        //ここに出力画像とフラグファイルのパスを記載する。
+        mFile = new File("/storage/self/primary/DCIM/Camera/", "img.jpg");
+        mFlagFile = new File("/storage/self/primary/DCIM/Camera/", "flg.txt");
+        //mFile = new File(getActivity().getExternalFilesDir(null), "pic.jpg");
+        
     }
 
     @Override
@@ -498,7 +519,8 @@ public class Camera2BasicFragment extends Fragment
 
                 // We don't use a front facing camera in this sample.
                 Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-                if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT) {
+                //����LENS_FACING_FRONT �ɂ���ƊO�J���ɂȂ�B
+                if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK) {
                     continue;
                 }
 
@@ -888,7 +910,8 @@ public class Camera2BasicFragment extends Fragment
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.picture: {
-                takePicture();
+                //capture�t���O�𔽓]������
+                captFlg = !captFlg;
                 break;
             }
             case R.id.info: {
