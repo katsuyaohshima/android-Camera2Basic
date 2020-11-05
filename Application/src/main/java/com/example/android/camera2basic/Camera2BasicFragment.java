@@ -183,6 +183,7 @@ public class Camera2BasicFragment extends Fragment
     private Size mPreviewSize;
 
     private boolean captFlg = false;
+    private int captCount = 0;
 
     /**
      * {@link CameraDevice.StateCallback} is called when {@link CameraDevice} changes its state.
@@ -296,15 +297,13 @@ public class Camera2BasicFragment extends Fragment
 
                     //captFlgが立っている場合は撮影処理を行う。
                     if (captFlg == true){
-
-                        boolean isExists = mFlagFile.exists();
-                        //フラグファイルがある場合は撮影処理を行いフラグファイルを削除
-                        if(isExists == true) {
-                            mFlagFile.delete();
-                            captureStillPicture();
-
+                        captCount++;
+                        mFile = new File("/storage/self/primary/DCIM/Camera/", "img_0" + String.valueOf(captCount)+".jpg");
+                        captureStillPicture();
+                        //10枚まで撮りためる。
+                        if(captCount >= 10){
+                            captCount = 0;
                         }
-
                     }
                     // We have nothing to do when the camera preview is working normally.
                     break;
