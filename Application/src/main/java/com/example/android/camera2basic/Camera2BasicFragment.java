@@ -41,6 +41,8 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -182,8 +184,19 @@ public class Camera2BasicFragment extends Fragment
      */
     private Size mPreviewSize;
 
-    private boolean captFlg = false;
-    private int captCount = 0;
+    private boolean mCaptFlg = false;
+    private int mCaptCount = 0;
+
+    /**
+     *  メディアスキャナにスキャンさせる
+     */
+    MediaScannerConnection.OnScanCompletedListener mScanCompletedListener = new MediaScannerConnection.OnScanCompletedListener() {
+        @Override
+        public void onScanCompleted(String path, Uri uri) {
+            Log.d("MediaScannerConnection", "Scanned " + path + ":");
+            Log.d("MediaScannerConnection", "-> uri=" + uri);
+        }
+    };
 
     /**
      * {@link CameraDevice.StateCallback} is called when {@link CameraDevice} changes its state.
@@ -295,14 +308,25 @@ public class Camera2BasicFragment extends Fragment
             switch (mState) {
                 case STATE_PREVIEW: {
 
-                    //captFlgが立っている場合は撮影処理を行う。
-                    if (captFlg == true){
-                        captCount++;
-                        mFile = new File("/storage/self/primary/DCIM/Camera/", "img_0" + String.valueOf(captCount)+".jpg");
+                    //mCaptFlgが立っている場合は撮影処理を行う。
+                    if (mCaptFlg == true){
+                        mCaptCount++;
+                        mFile = new File("/storage/self/primary/DCIM/Camera/", "img_0" + String.valueOf(mCaptCount)+".jpg");
+
+                        //メディアスキャナにスキャンさせる***
+                        String[] paths = {mFile.toString()};
+                        String[] mimeTypes = {"image/jpeg"};
+                        MediaScannerConnection.scanFile(getContext(),
+                                paths,
+                                mimeTypes,
+                                mScanCompletedListener);
+                        //*******************************
+
                         captureStillPicture();
+
                         //10枚まで撮りためる。
-                        if(captCount >= 10){
-                            captCount = 0;
+                        if(mCaptCount >= 9){
+                            mCaptCount = 0;
                         }
                     }
                     // We have nothing to do when the camera preview is working normally.
@@ -910,7 +934,7 @@ public class Camera2BasicFragment extends Fragment
         switch (view.getId()) {
             case R.id.picture: {
                 //capture�t���O�𔽓]������
-                captFlg = !captFlg;
+                mCaptFlg = !mCaptFlg;
                 break;
             }
             case R.id.info: {
