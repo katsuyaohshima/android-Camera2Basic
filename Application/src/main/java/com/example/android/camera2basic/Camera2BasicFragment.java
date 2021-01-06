@@ -310,8 +310,8 @@ public class Camera2BasicFragment extends Fragment
 
                     //mCaptFlgが立っている場合は撮影処理を行う。
                     if (mCaptFlg == true){
-                        mCaptCount++;
                         mFile = new File("/storage/self/primary/DCIM/Camera/", "img_0" + String.valueOf(mCaptCount)+".jpg");
+                        mCaptCount++;
 
                         //メディアスキャナにスキャンさせる***
                         String[] paths = {mFile.toString()};
@@ -325,7 +325,7 @@ public class Camera2BasicFragment extends Fragment
                         captureStillPicture();
 
                         //10枚まで撮りためる。
-                        if(mCaptCount >= 9){
+                        if(mCaptCount > 9){
                             mCaptCount = 0;
                         }
                     }
