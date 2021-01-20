@@ -70,7 +70,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -186,6 +185,9 @@ public class Camera2BasicFragment extends Fragment
 
     private boolean mCaptFlg = false;
     private int mCaptCount = 0;
+    private long mPrevCaptTime = 0;
+    private int mCaptStat=0;
+    private File mBuffFile[] = new File[10];
 
     /**
      *  メディアスキャナにスキャンさせる
@@ -307,27 +309,67 @@ public class Camera2BasicFragment extends Fragment
         private void process(CaptureResult result) {
             switch (mState) {
                 case STATE_PREVIEW: {
+                    long nowTime = System.currentTimeMillis();
 
                     //mCaptFlgが立っている場合は撮影処理を行う。
                     if (mCaptFlg == true){
-                        mFile = new File("/storage/self/primary/DCIM/Camera/", "img_0" + String.valueOf(mCaptCount)+".jpg");
-                        mCaptCount++;
 
-                        //メディアスキャナにスキャンさせる***
-                        String[] paths = {mFile.toString()};
-                        String[] mimeTypes = {"image/jpeg"};
-                        MediaScannerConnection.scanFile(getContext(),
+                        //! * メディアスキャナにスキャンさせるステート
+                        if(nowTime - mPrevCaptTime > 1000 && mCaptStat ==1){
+
+                            //! * 忘れないようにメモ
+                            //!     * 撮影からメディアスキャンまでにある程度待ちが必要らしい。
+                            //!     * とりあえず1sec空ける。
+                            String[] paths = {mFile.toString()};
+                            String[] mimeTypes = {"image/jpeg"};
+
+                            MediaScannerConnection.scanFile(getContext(),
                                 paths,
                                 mimeTypes,
                                 mScanCompletedListener);
-                        //*******************************
 
-                        captureStillPicture();
-
-                        //10枚まで撮りためる。
-                        if(mCaptCount > 9){
-                            mCaptCount = 0;
+                            mPrevCaptTime = nowTime;
+                            mCaptStat=0;
                         }
+
+                        //! * 古い写真の削除と新規写真を撮影するステート。
+                        else if(nowTime - mPrevCaptTime > 0 && mCaptStat ==0){
+                            
+                            //リングバッファを進める。
+                            mCaptCount++;
+                            if (mCaptCount>=10){
+                                mCaptCount = 0;
+                            }
+
+                            //古いファイルを削除
+                            mBuffFile[mCaptCount].delete();
+                            
+                            //新規ファイル名に書き換え
+                            mFile = new File("/storage/self/primary/DCIM/Camera/", "img_" + String.valueOf(System.currentTimeMillis())+".jpg");                            
+                            mBuffFile[mCaptCount] = mFile;
+                            
+                            //新規撮影
+                            captureStillPicture();
+                            mPrevCaptTime = nowTime;
+                            mCaptStat++;
+
+                            //! * 忘れないようにメモ
+                            //!     * 同名ファイルのタイムスタンプを更新するには以下の手順を踏まなきゃいけないらしい。
+                            //!        削除 -> メディアスキャン -> 撮影 -> メディアスキャン
+                            //!     * しかし、削除 -> メディアスキャン　とした時点でMTP接続がバグるのか、PCとの接続が途切れる
+                            //!     * よって以下の対応をとる。
+                            //!         1. ファイル名は常に更新にする(ファイル名にタイムスタンプを含める。)
+                            //!         2. 撮影したファイル名はリングバッファに格納して、古いものからデータを消していく。
+                            //!         3. ただし、消したデータのメディアスキャンは行わない。
+                            //!            PCとの接続を継続させたい。
+                            //!            ファイルの実体は消しているので問題なし。
+
+                        }
+                        
+                    }
+                    else
+                    {
+                        mPrevCaptTime = nowTime;
                     }
                     // We have nothing to do when the camera preview is working normally.
                     break;
@@ -476,9 +518,11 @@ public class Camera2BasicFragment extends Fragment
         super.onActivityCreated(savedInstanceState);
         //ここに出力画像とフラグファイルのパスを記載する。
         mFile = new File("/storage/self/primary/DCIM/Camera/", "img.jpg");
-        mFlagFile = new File("/storage/self/primary/DCIM/Camera/", "flg.txt");
-        //mFile = new File(getActivity().getExternalFilesDir(null), "pic.jpg");
-        
+
+        //リングバッファの初期化
+        for(int i = 0; i<10;i++){
+            mBuffFile[i] = mFile;
+        }
     }
 
     @Override
