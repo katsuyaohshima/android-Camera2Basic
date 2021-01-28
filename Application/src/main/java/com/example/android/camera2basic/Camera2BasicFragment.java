@@ -62,6 +62,7 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -188,6 +189,8 @@ public class Camera2BasicFragment extends Fragment
     private long mPrevCaptTime = 0;
     private int mCaptStat=0;
     private File mBuffFile[] = new File[10];
+    private String mWorkFolderPath = "/storage/self/primary/DCIM/Camera/";
+    private String mFileNameHeader = "__CHUKEN__";
 
     /**
      *  メディアスキャナにスキャンさせる
@@ -345,7 +348,7 @@ public class Camera2BasicFragment extends Fragment
                             mBuffFile[mCaptCount].delete();
                             
                             //新規ファイル名に書き換え
-                            mFile = new File("/storage/self/primary/DCIM/Camera/", "img_" + String.valueOf(System.currentTimeMillis())+".jpg");                            
+                            mFile = new File(mWorkFolderPath, mFileNameHeader + String.valueOf(System.currentTimeMillis())+".jpg");                            
                             mBuffFile[mCaptCount] = mFile;
                             
                             //新規撮影
@@ -516,13 +519,43 @@ public class Camera2BasicFragment extends Fragment
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        //ここに出力画像とフラグファイルのパスを記載する。
-        mFile = new File("/storage/self/primary/DCIM/Camera/", "img.jpg");
 
-        //リングバッファの初期化
+        //! * アプリ起動時の処理をここに記載する
+        //! * リングバッファの初期化
+        mFile = new File(mWorkFolderPath, "dummy.jpg");
         for(int i = 0; i<10;i++){
             mBuffFile[i] = mFile;
         }
+
+
+        //! * 以前の画像データを削除する。
+        //!     * 指定文字列のファイルorフォルダを抽出するフィルタを作成する
+        //!     * listFilesメソッドを使用して一覧を取得する。
+        //!     * ファイルを検出している場合は削除する。
+        //!     * MTP接続がバグるのでメディアスキャンはしません。
+
+        FilenameFilter filter = new FilenameFilter(){
+            public boolean accept(File file, String str){
+                if(str.indexOf(mFileNameHeader) != -1) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        };
+
+        File[] list = new File(mWorkFolderPath).listFiles(filter);
+
+        if(list != null) {
+            for(int i=0; i<list.length; i++) {
+                if(list[i].isFile()) {
+                    list[i].delete();
+                }
+            }
+        } else {
+            System.out.println("null");
+        }
+
     }
 
     @Override
